@@ -1,0 +1,42 @@
+{
+  "name": "yandel",
+  "description": "A reactive lightweight TS frontend framework",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zzzeros0/yandel.git"
+  },
+  "keywords": [
+    "framework",
+    "web",
+    "web-ui",
+    "render",
+    "web-app",
+    "components",
+    "web-components",
+    "html",
+    "ux",
+    "ui",
+    "front-end",
+    "frontend",
+    "typescript",
+    "ts",
+    "web",
+    "yandel",
+    "client"
+  ],
+  "author": "zzzeros0",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
