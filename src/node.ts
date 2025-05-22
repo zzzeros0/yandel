@@ -792,7 +792,6 @@ function nextInternalTick<S extends KeyedObject | void = void>(
   try {
     const internals = getInternals(target);
     if (internals.deleted) {
-      console.warn("Deleted internals");
       return;
     }
     if (internals.c.length) {

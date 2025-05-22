@@ -186,7 +186,7 @@ section(new TotalPriceButton(4, 2, buyFn));
  */
 ```
 
-Components can return an array if they don't need a parent:
+Components can return an array:
 
 ```ts
 class TotalPriceButton extends Component {
