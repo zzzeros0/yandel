@@ -1,5 +1,6 @@
 export {
   Component,
+  createContext,
   createRoot,
   EffectHandler,
   Element,
@@ -7,12 +8,10 @@ export {
   HTMLProps,
   HTMLTags,
   Portal,
+  StateHandler,
   Stores,
   Styles,
-  Template,
-  TemplateWithProps,
   ValidNodeChild,
   ValidTemplateReturn,
-  StateHandler,
 } from "./node";
 export * from "./tags";

@@ -1,25 +1,13 @@
-import { _is_string, InmutBool } from "./utils";
+import {
+  _is_fn,
+  _is_string,
+  asDeletable,
+  DELETE_KEY,
+  DELETED_KEY,
+  InmutBool,
+  setDeletable,
+} from "./utils";
 
-type KeyedObject = Record<string | symbol | number, any>;
-type HTMLTags = keyof HTMLElementTagNameMap;
-type Element<K extends HTMLTags = HTMLTags> = HTMLElementTagNameMap[K];
-interface SwitchableNode<T extends Node> {
-  switch(t: T): boolean;
-}
-type ValidNodeChild = Node | Component | Component<KeyedObject> | null | string;
-type ValidTemplateReturn = ValidNodeChild | ValidNodeChild[];
-type TemplateWithProps<P extends KeyedObject = KeyedObject> = (
-  props: P
-) => ValidTemplateReturn;
-type Template<P extends KeyedObject | void = void> = P extends void
-  ? () => ValidTemplateReturn
-  : TemplateWithProps<P extends void ? KeyedObject : P>;
-
-type EffectHandler = (() => void) | (() => () => void);
-type ExcludeFunctions<T> = {
-  [K in keyof T as T[K] extends Function ? never : K]: T[K];
-};
-type Styles = Partial<CSSStyleDeclaration>;
 type HTMLExcludedProperties =
   | `aria${string}`
   | "tagName"
@@ -142,21 +130,108 @@ type AriaProps =
 type AriaBoolean = "true" | "false";
 type AriaValue = Exclude<string, AriaBoolean>;
 type AriaValueMap = Partial<Record<AriaProps, AriaBoolean | AriaValue>>;
+type KeyedObject = Record<string | symbol | number, any>;
+type HTMLTags = keyof HTMLElementTagNameMap;
+type HTMLSVGTags = keyof SVGElementTagNameMap;
+type Element<K extends HTMLTags = HTMLTags> = HTMLElementTagNameMap[K];
+type SVGElement<K extends HTMLSVGTags = HTMLSVGTags> = SVGElementTagNameMap[K];
+interface SwitchableNode<T extends Node> {
+  switch(t: T): boolean;
+}
+type FutureNode = () => ValidNodeChild;
+type ValidNodeChild =
+  | Node
+  | Component
+  | Component<KeyedObject>
+  | FutureNode
+  | null
+  | string;
+type ValidTemplateReturn = ValidNodeChild | ValidNodeChild[];
+type EffectHandler = (() => void) | (() => () => void);
+type ExcludeFunctions<T> = {
+  [K in keyof T as T[K] extends Function ? never : K]: T[K];
+};
+type Styles = Partial<CSSStyleDeclaration>;
 interface ElementOverridedProperties extends AriaValueMap {
   style?: Styles;
 }
-type ElementRef<T extends HTMLTags = HTMLTags> = Stores<Element<T> | undefined>;
-interface ElementProps<T extends HTMLTags = HTMLTags> {
+type AnyElement<T extends HTMLTags | HTMLSVGTags = HTMLTags> =
+  T extends HTMLTags
+    ? Element<T>
+    : T extends HTMLSVGTags
+    ? SVGElement<T>
+    : never;
+type AnyProps<T extends HTMLTags | HTMLSVGTags = HTMLTags> = T extends HTMLTags
+  ? HTMLProps<T>
+  : T extends HTMLSVGTags
+  ? SVGProps<T>
+  : never;
+type ElementRef<T extends HTMLTags | HTMLSVGTags = HTMLTags> = Stores<
+  | (T extends HTMLTags
+      ? HTMLElementTagNameMap[T]
+      : T extends HTMLSVGTags
+      ? SVGElementTagNameMap[T]
+      : never)
+  | undefined
+>;
+interface ElementProps<T extends HTMLTags | HTMLSVGTags = HTMLTags> {
   ref?: ElementRef<T>;
   key?: string | number | symbol;
 }
 type ExcludeProperties<T> = {
   [K in keyof T as K extends HTMLExcludedProperties ? never : K]: T[K];
 };
-type HTMLProps<T extends HTMLTags = HTMLTags> = Partial<
-  ExcludeProperties<ExcludeFunctions<Element<T>>> & ElementProps<T>
+type HTMLProps<T extends HTMLTags> = Partial<
+  ExcludeProperties<ExcludeFunctions<Element<T>>>
 > &
+  ElementProps<T> &
   ElementOverridedProperties;
+
+type SVGAttributeValue = string | number;
+
+type NormalizeSVGProp<T> = T extends SVGAnimatedLength
+  ? SVGAttributeValue
+  : T extends SVGAnimatedAngle
+  ? SVGAttributeValue
+  : T extends SVGAnimatedBoolean
+  ? SVGAttributeValue
+  : T extends SVGAnimatedEnumeration
+  ? SVGAttributeValue
+  : T extends SVGAnimatedInteger
+  ? SVGAttributeValue
+  : T extends SVGAnimatedNumber
+  ? SVGAttributeValue
+  : T extends SVGAnimatedPreserveAspectRatio
+  ? SVGAttributeValue
+  : T extends SVGAnimatedRect
+  ? SVGAttributeValue
+  : T extends SVGAnimatedString
+  ? SVGAttributeValue
+  : T extends SVGAnimatedTransformList
+  ? SVGAttributeValue
+  : T extends SVGPointList
+  ? SVGAttributeValue
+  : T;
+
+type SVGRawProps<T extends HTMLSVGTags> = ExcludeProperties<
+  ExcludeFunctions<SVGElementTagNameMap[T]>
+>;
+interface SVGOverridedProperties {
+  fill?: string;
+  "fill-opacity"?: string;
+  stroke?: string;
+  "stroke-width"?: SVGAttributeValue;
+  "stroke-linecap"?: "butt" | "round" | "square";
+  "stroke-linejoin"?: "miter" | "round" | "bevel";
+  d?: string;
+  "stroke-dasharray"?: SVGAttributeValue;
+}
+type SVGProps<T extends HTMLSVGTags> = Partial<{
+  [K in keyof SVGRawProps<T>]: NormalizeSVGProp<SVGRawProps<T>[K]>;
+}> &
+  ElementProps<T> &
+  ElementOverridedProperties &
+  SVGOverridedProperties;
 type StateHandler<S extends KeyedObject | undefined = undefined> =
   | S
   | ((l: S) => S);
@@ -165,6 +240,71 @@ interface HasInternals<S extends KeyedObject | void = void> {
   _deleted: boolean;
   _delete(): void;
 }
+const SVG_TAGS = new Set([
+  "a",
+  "animate",
+  "animateMotion",
+  "animateTransform",
+  "circle",
+  "clipPath",
+  "defs",
+  "desc",
+  "ellipse",
+  "feBlend",
+  "feColorMatrix",
+  "feComponentTransfer",
+  "feComposite",
+  "feConvolveMatrix",
+  "feDiffuseLighting",
+  "feDisplacementMap",
+  "feDistantLight",
+  "feDropShadow",
+  "feFlood",
+  "feFuncA",
+  "feFuncB",
+  "feFuncG",
+  "feFuncR",
+  "feGaussianBlur",
+  "feImage",
+  "feMerge",
+  "feMergeNode",
+  "feMorphology",
+  "feOffset",
+  "fePointLight",
+  "feSpecularLighting",
+  "feSpotLight",
+  "feTile",
+  "feTurbulence",
+  "filter",
+  "foreignObject",
+  "g",
+  "image",
+  "line",
+  "linearGradient",
+  "marker",
+  "mask",
+  "metadata",
+  "mpath",
+  "path",
+  "pattern",
+  "polygon",
+  "polyline",
+  "radialGradient",
+  "rect",
+  "script",
+  "set",
+  "stop",
+  "style",
+  "svg",
+  "switch",
+  "symbol",
+  "text",
+  "textPath",
+  "title",
+  "tspan",
+  "use",
+  "view",
+]);
 const enum NodeType {
   Tag,
   Content,
@@ -197,10 +337,7 @@ class ComponentUpdateQueue {
         return;
       }
       queueMicrotask(() => {
-        render(
-          c,
-          c.parent as ComponentNode | ParentNode<Element> | TagNode<HTMLTags>
-        );
+        render(c, c.parent as ComponentNode | ParentNode | TagNode);
         requestAnimationFrame(() => {
           _attach(c);
         });
@@ -227,7 +364,13 @@ class ComponentUpdateQueue {
     if (!this._update_scheduled) this.notifyQueue();
   }
 }
-
+function queueNodesDeletion(ns: ValidNodeChild[]) {
+  queueMicrotask(() => {
+    for (const c of ns) {
+      if (c && !_is_string(c) && !_is_fn(c) && !Component.is(c)) c.delete();
+    }
+  });
+}
 const ComponentInternalKey = Symbol("_$ci$_");
 
 function _c_el<T extends HTMLTags>(t: T) {
@@ -236,14 +379,9 @@ function _c_el<T extends HTMLTags>(t: T) {
 function _c_t(c: string) {
   return document.createTextNode(c);
 }
-function queueNodesDeletion(ns: ValidNodeChild[]) {
-  queueMicrotask(() => {
-    for (const c of ns) {
-      if (c && !_is_string(c) && !Component.is(c)) c.delete();
-    }
-  });
+function _c_s(t: string) {
+  return document.createElementNS("http://www.w3.org/2000/svg", t);
 }
-
 class Node {
   public readonly $typeof: NodeType;
   private _index_of: number = 0;
@@ -324,31 +462,42 @@ class ContentNode extends Node {
     super.delete();
   }
 }
-
-function _apply_dom_prop<T extends HTMLTags>(
-  dom: Element<T>,
-  props: HTMLProps<T>,
+function _get_node_from_future(t: FutureNode) {
+  let n: ValidNodeChild;
+  try {
+    n = t();
+  } catch (error) {
+    throw new Error("Future error");
+  }
+  if (_is_fn(n)) return _get_node_from_future(n);
+  return n;
+}
+function _apply_dom_prop<T extends HTMLTags | HTMLSVGTags>(
+  dom: AnyElement<T>,
+  props: AnyProps<T>,
   prop: string
 ) {
-  const v = props[prop as keyof HTMLProps<T>];
+  const v = props[prop as keyof AnyProps<T>];
   if (v == null) return;
   if (/^on[a-z]/.test(prop)) {
     const ev_name = prop.slice(2);
     dom.addEventListener(
       ev_name,
-      props[prop as keyof HTMLProps<T>] as EventListener
+      props[prop as keyof AnyProps<T>] as EventListener
     );
     return;
   }
   if (prop === "ref" && props.ref instanceof Stores) {
-    props.ref.stores = dom;
+    (props.ref as Stores<SVGElement | Element>).stores = dom as
+      | SVGElement
+      | Element;
     return;
   }
   if (prop === "style" && typeof v === "object") {
     try {
       Object.entries(v).forEach(([cssProp, cssValue]) => {
         if (cssProp in dom.style) {
-          dom.style[cssProp as any] = cssValue || "";
+          (dom.style as any)[cssProp] = cssValue || "";
         } else {
           console.warn(`Unknown CSS property: ${cssProp}`);
         }
@@ -359,26 +508,31 @@ function _apply_dom_prop<T extends HTMLTags>(
     return;
   }
   if (prop in dom) {
-    (dom as any)[prop] = v;
-    return;
+    const t = typeof (dom as any)[prop];
+    if (!((typeof v === "string" || typeof v === "number") && t === "object")) {
+      (dom as any)[prop] = v;
+      return;
+    }
   }
+  // const pn = prop.toLowerCase();
   if (typeof v === "boolean") {
     if (v) dom.setAttribute(prop, "");
     else dom.removeAttribute(prop);
     return;
   }
-  dom.setAttribute(prop, v as string);
+  if (typeof v === "number") dom.setAttribute(prop, v.toString());
+  else dom.setAttribute(prop, v as string);
 }
-function _remove_dom_prop<T extends HTMLTags>(
-  dom: Element<T>,
-  props: HTMLProps<T>,
+function _remove_dom_prop<T extends HTMLTags | HTMLSVGTags>(
+  dom: AnyElement<T>,
+  props: AnyProps<T>,
   prop: string
 ) {
   if (/^on[a-z]/.test(prop)) {
     const ev_name = prop.slice(2);
     dom.removeEventListener(
       ev_name,
-      props[prop as keyof HTMLProps<T>] as EventListener
+      props[prop as keyof AnyProps<T>] as EventListener
     );
     return;
   }
@@ -386,7 +540,7 @@ function _remove_dom_prop<T extends HTMLTags>(
     props.ref.stores = undefined;
     return;
   }
-  const v = props[prop as keyof HTMLProps<T>];
+  const v = props[prop as keyof AnyProps<T>];
   if (v == null) return;
   if (prop === "style" && typeof v === "object") {
     try {
@@ -406,27 +560,28 @@ function _remove_dom_prop<T extends HTMLTags>(
 
   if (prop in dom) {
     const t = typeof (dom as any)[prop];
-    try {
-      switch (t) {
-        case "boolean": {
-          (dom as any)[prop] = false;
-          return;
+    if (!((typeof v === "string" || typeof v === "number") && t === "object"))
+      try {
+        switch (t) {
+          case "boolean": {
+            (dom as any)[prop] = false;
+            return;
+          }
+          case "string": {
+            (dom as any)[prop] = "";
+            return;
+          }
+          case "object": {
+            (dom as any)[prop] = null;
+            return;
+          }
         }
-        case "string": {
-          (dom as any)[prop] = "";
-          return;
-        }
-        case "object": {
-          (dom as any)[prop] = null;
-          return;
-        }
-      }
-    } catch (error) {}
+      } catch (error) {}
   }
 
   dom.removeAttribute(prop);
 }
-class TagNode<T extends HTMLTags = HTMLTags>
+class TagNode<T extends HTMLTags | HTMLSVGTags = HTMLTags>
   extends Node
   implements SwitchableNode<TagNode>
 {
@@ -434,12 +589,12 @@ class TagNode<T extends HTMLTags = HTMLTags>
     return t instanceof TagNode;
   }
   public tag: T;
-  private _dom: Element<T> | undefined = undefined;
-  private _props: HTMLProps<T> | undefined = undefined;
+  private _dom: AnyElement<T> | undefined = undefined;
+  private _props: AnyProps<T> | undefined = undefined;
   private _children: ValidNodeChild[] | undefined = undefined;
   public key: symbol | string | number | undefined = undefined;
   public index_length: number = 0;
-  constructor(tag: T, props?: HTMLProps<T>, children?: ValidNodeChild[]) {
+  constructor(tag: T, props?: AnyProps<T>, children?: ValidNodeChild[]) {
     super(NodeType.Tag);
     this.tag = tag;
     this._props = props;
@@ -455,7 +610,7 @@ class TagNode<T extends HTMLTags = HTMLTags>
       _apply_dom_prop(this._dom, this._props, prop);
     }
   }
-  private _diff_dom_props(nprops: HTMLProps<T>) {
+  private _diff_dom_props(nprops: AnyProps<T>) {
     if (!this._props) {
       this._props = nprops;
       this._apply_dom_props();
@@ -512,7 +667,9 @@ class TagNode<T extends HTMLTags = HTMLTags>
       this.needs_update = true;
       return true;
     }
-    this._dom = _c_el(this.tag);
+    this._dom = (
+      SVG_TAGS.has(this.tag) ? _c_s(this.tag) : _c_el(this.tag as HTMLTags)
+    ) as AnyElement<T>;
     this._apply_dom_props();
     this.needs_update = false;
     return true;
@@ -547,13 +704,13 @@ class TagNode<T extends HTMLTags = HTMLTags>
     this.key = t.props?.key ?? t.key;
     if (this.tag === t.tag) {
       // Tag is the same
-      if (t.props) this._diff_dom_props(t.props as HTMLProps<T>);
+      if (t.props) this._diff_dom_props(t.props as AnyProps<T>);
       else if (this._props) this._clear_dom_props();
     } else {
       // Tag has changed
       this.clearDom();
       this.tag = t.tag as T;
-      this._props = t.props ? (t.props as HTMLProps<T>) : undefined;
+      this._props = t.props ? (t.props as AnyProps<T>) : undefined;
       this.create();
     }
     if (this.hasChildren) {
@@ -640,8 +797,14 @@ class ComponentNode extends Node implements SwitchableNode<ComponentNode> {
     if ((this._template as any as HasInternals)._deleted)
       throw new Error("Template has been deleted");
     nextInternalTick(this._template);
+    let child: ValidTemplateReturn;
     try {
-      const child = this._template.render();
+      try {
+        child = this._template.render();
+      } catch (error) {
+        console.warn("Template create error:", error);
+        return;
+      }
       if (child == null) return;
       const nc = Array.isArray(child)
         ? child
@@ -707,6 +870,7 @@ class ComponentInternals<S extends KeyedObject | void = void> {
   #_n: ComponentNode | undefined = undefined;
   public readonly e: EffectHandler[] = [];
   public readonly c: VoidFunction[] = [];
+  public readonly p: Set<Context<{}>> = new Set();
   private _state: S | undefined = undefined;
   private _state_defined = false;
   private _deleted = false;
@@ -764,6 +928,9 @@ class ComponentInternals<S extends KeyedObject | void = void> {
     this.c.length = 0;
     this._state = undefined;
     this._state_defined = false;
+    for (const c of this.p) {
+      asDeletable(c)[DELETE_KEY]();
+    }
   }
   public get deleted() {
     return this._deleted;
@@ -862,7 +1029,39 @@ abstract class Component<S extends KeyedObject | void = void> {
   }
   abstract render(): ValidTemplateReturn;
 }
-
+class Context<T extends KeyedObject> {
+  #_s: Stores<T | undefined> = new Stores(undefined);
+  #_p: Component<any> | undefined = undefined;
+  constructor() {
+    setDeletable(this, () => {
+      if (!this.#_p) throw new Error("Component not defined");
+      getInternals(this.#_p).p.delete(this);
+      this.#_p = undefined;
+      this.#_s.stores = undefined;
+    });
+  }
+  public get ok() {
+    return asDeletable(this)[DELETED_KEY] === false && this.#_p !== undefined;
+  }
+  public consume(): T {
+    if (asDeletable(this)[DELETED_KEY] && !this.#_p) {
+      console.warn("You are consuming a deleted context");
+      return undefined as any;
+    }
+    return this.#_s.stores as T;
+  }
+  public provide<S extends KeyedObject | void = void>(c: Component<S>, v: T) {
+    asDeletable(this)[DELETED_KEY] = false;
+    if (this.#_p) {
+      getInternals(this.#_p).p.delete(this);
+      this.#_p = undefined;
+      this.#_s.stores = undefined;
+    }
+    this.#_p = c;
+    getInternals(this.#_p).p.add(this);
+    this.#_s.stores = v;
+  }
+}
 function diff(a: Node, b: Node): boolean {
   if (a.$typeof !== b.$typeof) throw new Error("Expected same node type");
   if (TagNode.is(a)) {
@@ -898,6 +1097,8 @@ function diffChildren(a: ValidNodeChild[], b: ValidNodeChild[]): boolean {
       if (cb == null) continue;
       a[i] = _is_string(cb)
         ? new ContentNode(cb).setIndex_of(ri++)
+        : _is_fn(cb)
+        ? _get_node_from_future(cb)
         : Component.is(cb)
         ? new ComponentNode(cb).setIndex_of(ri++)
         : cb;
@@ -905,7 +1106,7 @@ function diffChildren(a: ValidNodeChild[], b: ValidNodeChild[]): boolean {
       changed.set(true);
     } else {
       if (cb == null) {
-        if (!_is_string(ca)) {
+        if (!_is_string(ca) && !_is_fn(ca)) {
           if (Component.is(ca)) (ca as any as HasInternals)._delete();
           else ca.delete();
         }
@@ -913,8 +1114,8 @@ function diffChildren(a: ValidNodeChild[], b: ValidNodeChild[]): boolean {
         changed.set(true);
         continue;
       }
-      if (_is_string(ca)) {
-        console.warn("Diffing a string");
+      if (_is_string(ca) || _is_fn(ca)) {
+        console.warn("Diffing a Future node");
         continue;
       } else if (Component.is(ca)) {
         if (!ComponentNode.is(cb)) {
@@ -932,6 +1133,38 @@ function diffChildren(a: ValidNodeChild[], b: ValidNodeChild[]): boolean {
             ca.delete();
             a[i] = new ContentNode(cb).setIndex_of(ri++);
             changed.set(true);
+          }
+        } else if (_is_fn(cb)) {
+          const node = _get_node_from_future(cb);
+          if (node == null) {
+            if (ca instanceof Node) ca.delete();
+            a[i] = null;
+            changed.set(true);
+            continue;
+          }
+          if (_is_string(node)) {
+            if (ContentNode.is(ca)) {
+              ca.content = node;
+              changed.set(ca.needs_update);
+            } else {
+              ca.delete();
+              a[i] = new ContentNode(node).setIndex_of(ri++);
+              changed.set(true);
+            }
+          } else if (Component.is(node)) {
+            if (ComponentNode.is(ca)) {
+              ca.switchTemplate(node);
+            } else {
+              ca.delete();
+              a[i] = new ComponentNode(node).setIndex_of(ri++);
+              changed.set(true);
+            }
+          } else {
+            if (ca.$typeof !== node.$typeof) {
+              ca.delete();
+              a[i] = node.setIndex_of(ri++);
+              changed.set(true);
+            } else changed.set(diff(ca, node));
           }
         } else if (Component.is(cb)) {
           if (ComponentNode.is(ca)) {
@@ -987,7 +1220,12 @@ function _attach(node: Node) {
     return;
   }
   const root = getParentRoot(node);
-  let targetDom: Text | HTMLElement | DocumentFragment | undefined = undefined;
+  let targetDom:
+    | Text
+    | HTMLElement
+    | SVGElement
+    | DocumentFragment
+    | undefined = undefined;
   let hasc = false;
   if (ContentNode.is(node)) {
     targetDom = node.dom;
@@ -1042,6 +1280,19 @@ function renderChildren(node: ParentNode | ComponentNode | TagNode) {
         if (_is_string(c)) {
           nnode = new ContentNode(c);
           children[i] = nnode;
+        } else if (_is_fn(c)) {
+          try {
+            const n = _get_node_from_future(c);
+            if (!n) continue;
+            if (_is_string(n)) nnode = new ContentNode(n);
+            else if (Component.is(n)) nnode = new ComponentNode(n);
+            else nnode = n;
+            children[i] = nnode;
+          } catch (error) {
+            console.warn(error);
+            children[i] = null;
+            continue;
+          }
         } else if (Component.is(c)) {
           nnode = new ComponentNode(c);
           children[i] = nnode;
@@ -1099,8 +1350,8 @@ function render(node: Node, parent: ParentNode | ComponentNode | TagNode) {
   throw new Error("Unknown node");
 }
 
-class Root<T extends Element> {
-  private readonly html_root: Element;
+class Root<T extends HTMLElement> {
+  private readonly html_root: HTMLElement;
   private root: ParentNode | undefined = undefined;
   private _deleted = false;
   constructor(root: T) {
@@ -1108,6 +1359,7 @@ class Root<T extends Element> {
   }
 
   public render(...children: ValidNodeChild[]) {
+    if (children.length === 0) throw new Error("No children supplied");
     queueMicrotask(() => {
       if (this.root != undefined) {
         throw new Error(
@@ -1139,29 +1391,33 @@ class Root<T extends Element> {
 function Portal<T extends HTMLElement>(root: T, ...children: ValidNodeChild[]) {
   return new ParentNode(root, children);
 }
-function createRoot<T extends Element>(root: T) {
+function createRoot<T extends HTMLElement>(root: T) {
   const r = new Root(root);
   return {
     render: r.render.bind(r),
   };
 }
+function createContext<T extends KeyedObject>() {
+  return new Context<T>();
+}
 
 export {
   Component,
+  createContext,
   createRoot,
   EffectHandler,
   Element,
   ElementRef,
   HTMLProps,
   HTMLTags,
+  HTMLSVGTags,
+  SVGProps,
   Node,
   Portal,
+  StateHandler,
   Stores,
   Styles,
   TagNode,
-  Template,
-  TemplateWithProps,
   ValidNodeChild,
   ValidTemplateReturn,
-  StateHandler,
 };

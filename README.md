@@ -7,11 +7,14 @@
 - [Installation](#installation)
 - [Introduction](#introduction)
   - [Tags](#tags)
+    - [SVG](#svg-support)
   - [Text](#text)
   - [Portal](#portal)
   - [Templates](#templates)
   - [Components](#components)
     - [Reactivity](#reactivity)
+  - [Contexts](#contexts)
+    - [Future Nodes](#future-nodes)
   - [Ref](#ref)
   - [Key](#key)
 - [Usage](#usage)
@@ -59,6 +62,37 @@ div(
  *      <span/>
  *      <section/>
  * </div>
+ */
+```
+
+#### SVG support
+
+HTML SVG elements are also allowed under the svg function and namespace:
+
+```ts
+import { svg } from "yandel";
+
+svg(
+  {
+    viewBox: "0 0 100 100",
+    width: 100,
+    height: 100,
+  },
+  svg.circle({
+    cx: 50,
+    cy: 50,
+    r: 30,
+    fill: "red",
+  }),
+  svg.path({
+    d: "M 10 10 H 90 V 90 H 10 Z",
+  })
+);
+/**
+ * <svg viewbox="0 0 100 100" width="100px" height="100px">
+ *  <circle cx="50" cy="50" r="30" fill="red"/>
+ *  <path d="M 10 10 H 90 V 90 H 10 Z">
+ * </svg>
  */
 ```
 
@@ -401,6 +435,123 @@ public render(): ValidTemplateReturn {
 
 ```
 
+### Contexts
+
+Sharing data between components is easier with `contexts`. Define your context using `createContext`:
+
+```ts
+import { createContext } from "yandel";
+
+const userContext = createContext<{
+  user: User | null;
+  login(): void;
+}>();
+```
+
+Then, inside of your `render` function, call `provide` to hydrate your context. Argments are:
+
+- The component's instance.
+- The value to store in the context.
+
+Contexts that have not been provided are inaccesible. **A context can't be provided by more than one component**.
+
+```ts
+
+class UserProvider extends Component<{user: User | null}> {
+  public render(): ValidTemplateReturn {
+    userContext.provide(this, {
+      user: this.state.user,
+      login: () => ...
+    });
+    return ...;
+  }
+}
+```
+
+Once it has been provided, it's accesible everywhere, even for non descendant nodes (if so, you must be responsible of the context life-time, and when/where is or not aviable).
+**Note**: when a component provider changes (for example, a setState update), the context value will be again provided (re-hydrated). Don't forget that nodes that are not a child inside the component's tree won't be updated:
+
+```ts
+public render(): ValidTemplateReturn {
+  return [
+    new UserProvider(),
+    UserConsumer()
+  ];
+}
+// UserProvider provides the context.
+// As it is before the consumer, the consumer will be able to consume it (if the consumer is called before the provider, an error would be thrown)
+// When UserProvider changes (state update) its children will update. Therefore UserConsumer won't be updated.
+```
+
+To consume a context, call `consume`. You can call this from a Component, a template, or wherever you want.
+
+```ts
+function UserConsumer() {
+  const { user } = userContext.consume();
+  return ...;
+}
+
+class UserConsumer extends Component {
+  public render () :ValideTemplateReturn {
+    const { user } = userContext.consume();
+    return ...;
+  }
+}
+
+function notAnUiFunction () {
+   const { user } = userContext.consume();
+   ...;
+}
+
+```
+
+You can check if the context is correctly provided:
+
+```ts
+function UserConsumerWithError() {
+  if (!userContext.ok) return p("There was an error");
+  const { user } = userContext.consume();
+  return ...;
+}
+```
+
+**Important**: calling `consume` over a non provided context will return `undefined`. Destructuration will **throw an error**:
+
+```ts
+function UserConsumerWithError() {
+  // Not checking if context is accesible
+  const { user } = userContext.consume(); // Error: cannot destructure property as it's undefined!!
+  return ...;
+}
+```
+
+#### Future nodes
+
+In this previous example:
+
+```ts
+public render(): ValidTemplateReturn {
+  return [
+    new UserProvider(),
+    UserConsumer()
+  ];
+}
+```
+
+`UserConsumer` won't be able to access the `UserContext`. `UserConsumer` is called before the `UserProvider` `render` method.
+In this situations, you can use `Future Nodes`. They are functions that are valid as child, and will be created at render time.
+
+```ts
+public render(): ValidTemplateReturn {
+  return [
+    new UserProvider(),
+    UserConsumer // or () => UserConsumer()
+  ];
+}
+```
+
+Now, `UserConsumer` will be able to consume.
+
 ### Ref
 
 The `ref` prop allows you to have access to the element's reference:
@@ -443,7 +594,7 @@ class WithKey extends Component {
 
 ## Usage
 
-Define your own templates and components. Then, use `createRoot` to render your UI.
+Define your own templates and components. Then, use `createRoot.render` to render your UI.
 
 ```ts
 import {
@@ -514,7 +665,7 @@ class MessageInput extends Component<{ message: string }> {
 // Entry point
 createRoot(document.body).render(new MessageInput());
 
-// Renders:
+// Renders inside of body:
 // <div>
 //  <form>
 //    <input type="text">

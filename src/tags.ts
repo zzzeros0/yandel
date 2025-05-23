@@ -2,6 +2,8 @@ import {
   Component,
   HTMLProps,
   HTMLTags,
+  HTMLSVGTags,
+  SVGProps,
   Node,
   TagNode,
   ValidNodeChild,
@@ -14,7 +16,10 @@ export function _is_valid_node(n: any): n is ValidNodeChild {
   );
 }
 
-function _c_t<T extends HTMLTags>(tag: T, args?: any[]): TagNode<T> {
+function _c_t<T extends HTMLTags | HTMLSVGTags>(
+  tag: T,
+  args?: any[]
+): TagNode<T> {
   if (args?.length) {
     if (args.length > 1) {
       return _is_valid_node(args[0])
@@ -1478,4 +1483,672 @@ export function video(...args: any[]): TagNode<"video"> {
  */
 export function wbr(props?: HTMLProps<"wbr">): TagNode<"wbr"> {
   return props ? _c_t("wbr", [props]) : _c_t("wbr");
+}
+/**
+ *  svg - Creates svg element
+ */
+export function svg(): TagNode<"svg">;
+export function svg(props: SVGProps<"svg">): TagNode<"svg">;
+export function svg(...children: ValidNodeChild[]): TagNode<"svg">;
+export function svg(
+  props: SVGProps<"svg">,
+  ...children: ValidNodeChild[]
+): TagNode<"svg">;
+export function svg(...args: any[]): TagNode<"svg"> {
+  return _c_t("svg", args);
+}
+export namespace svg {
+  /**
+   *  a - Creates svg a element
+   */
+  export function a(): TagNode<"a">;
+  export function a(props: SVGProps<"a">): TagNode<"a">;
+
+  export function a(...args: any[]): TagNode<"a"> {
+    return _c_t("a", args);
+  }
+  /**
+   *  animate - Creates svg animate element
+   */
+  export function animate(): TagNode<"animate">;
+  export function animate(props: SVGProps<"animate">): TagNode<"animate">;
+
+  export function animate(...args: any[]): TagNode<"animate"> {
+    return _c_t("animate", args);
+  }
+  /**
+   *  animateMotion - Creates svg animateMotion element
+   */
+  export function animateMotion(): TagNode<"animateMotion">;
+  export function animateMotion(
+    props: SVGProps<"animateMotion">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"animateMotion">;
+  export function animateMotion(...args: any[]): TagNode<"animateMotion"> {
+    return _c_t("animateMotion", args);
+  }
+  /**
+   *  animateTransform - Creates svg animateTransform element
+   */
+  export function animateTransform(): TagNode<"animateTransform">;
+  export function animateTransform(
+    props: SVGProps<"animateTransform">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"animateTransform">;
+  export function animateTransform(
+    ...args: any[]
+  ): TagNode<"animateTransform"> {
+    return _c_t("animateTransform", args);
+  }
+  /**
+   *  circle - Creates svg circle element
+   */
+  export function circle(): TagNode<"circle">;
+  export function circle(props: SVGProps<"circle">): TagNode<"circle">;
+
+  export function circle(...args: any[]): TagNode<"circle"> {
+    return _c_t("circle", args);
+  }
+  /**
+   *  clipPath - Creates svg clipPath element
+   */
+  export function clipPath(): TagNode<"clipPath">;
+  export function clipPath(props: SVGProps<"clipPath">): TagNode<"clipPath">;
+
+  export function clipPath(...args: any[]): TagNode<"clipPath"> {
+    return _c_t("clipPath", args);
+  }
+  /**
+   *  defs - Creates svg defs element
+   */
+  export function defs(): TagNode<"defs">;
+  export function defs(props: SVGProps<"defs">): TagNode<"defs">;
+  export function defs(...children: ValidNodeChild[]): TagNode<"defs">;
+  export function defs(
+    props: SVGProps<"defs">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"defs">;
+
+  export function defs(...args: any[]): TagNode<"defs"> {
+    return _c_t("defs", args);
+  }
+  /**
+   *  desc - Creates svg desc element
+   */
+  export function desc(): TagNode<"desc">;
+  export function desc(props: SVGProps<"desc">): TagNode<"desc">;
+
+  export function desc(...args: any[]): TagNode<"desc"> {
+    return _c_t("desc", args);
+  }
+  /**
+   *  ellipse - Creates svg ellipse element
+   */
+  export function ellipse(): TagNode<"ellipse">;
+  export function ellipse(props: SVGProps<"ellipse">): TagNode<"ellipse">;
+
+  export function ellipse(...args: any[]): TagNode<"ellipse"> {
+    return _c_t("ellipse", args);
+  }
+  /**
+   *  feBlend - Creates svg feBlend element
+   */
+  export function feBlend(): TagNode<"feBlend">;
+  export function feBlend(props: SVGProps<"feBlend">): TagNode<"feBlend">;
+
+  export function feBlend(...args: any[]): TagNode<"feBlend"> {
+    return _c_t("feBlend", args);
+  }
+  /**
+   *  feColorMatrix - Creates svg feColorMatrix element
+   */
+  export function feColorMatrix(): TagNode<"feColorMatrix">;
+  export function feColorMatrix(
+    props: SVGProps<"feColorMatrix">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"feColorMatrix">;
+  export function feColorMatrix(...args: any[]): TagNode<"feColorMatrix"> {
+    return _c_t("feColorMatrix", args);
+  }
+  /**
+   *  feComponentTransfer - Creates svg feComponentTransfer element
+   */
+  export function feComponentTransfer(): TagNode<"feComponentTransfer">;
+  export function feComponentTransfer(
+    props: SVGProps<"feComponentTransfer">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"feComponentTransfer">;
+  export function feComponentTransfer(
+    ...args: any[]
+  ): TagNode<"feComponentTransfer"> {
+    return _c_t("feComponentTransfer", args);
+  }
+  /**
+   *  feComposite - Creates svg feComposite element
+   */
+  export function feComposite(): TagNode<"feComposite">;
+  export function feComposite(
+    props: SVGProps<"feComposite">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"feComposite">;
+  export function feComposite(...args: any[]): TagNode<"feComposite"> {
+    return _c_t("feComposite", args);
+  }
+  /**
+   *  feConvolveMatrix - Creates svg feConvolveMatrix element
+   */
+  export function feConvolveMatrix(): TagNode<"feConvolveMatrix">;
+  export function feConvolveMatrix(
+    props: SVGProps<"feConvolveMatrix">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"feConvolveMatrix">;
+  export function feConvolveMatrix(
+    ...args: any[]
+  ): TagNode<"feConvolveMatrix"> {
+    return _c_t("feConvolveMatrix", args);
+  }
+  /**
+   *  feDiffuseLighting - Creates svg feDiffuseLighting element
+   */
+  export function feDiffuseLighting(): TagNode<"feDiffuseLighting">;
+  export function feDiffuseLighting(
+    props: SVGProps<"feDiffuseLighting">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"feDiffuseLighting">;
+  export function feDiffuseLighting(
+    ...args: any[]
+  ): TagNode<"feDiffuseLighting"> {
+    return _c_t("feDiffuseLighting", args);
+  }
+  /**
+   *  feDisplacementMap - Creates svg feDisplacementMap element
+   */
+  export function feDisplacementMap(): TagNode<"feDisplacementMap">;
+  export function feDisplacementMap(
+    props: SVGProps<"feDisplacementMap">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"feDisplacementMap">;
+  export function feDisplacementMap(
+    ...args: any[]
+  ): TagNode<"feDisplacementMap"> {
+    return _c_t("feDisplacementMap", args);
+  }
+  /**
+   *  feDistantLight - Creates svg feDistantLight element
+   */
+  export function feDistantLight(): TagNode<"feDistantLight">;
+  export function feDistantLight(
+    props: SVGProps<"feDistantLight">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"feDistantLight">;
+  export function feDistantLight(...args: any[]): TagNode<"feDistantLight"> {
+    return _c_t("feDistantLight", args);
+  }
+  /**
+   *  feDropShadow - Creates svg feDropShadow element
+   */
+  export function feDropShadow(): TagNode<"feDropShadow">;
+  export function feDropShadow(
+    props: SVGProps<"feDropShadow">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"feDropShadow">;
+  export function feDropShadow(...args: any[]): TagNode<"feDropShadow"> {
+    return _c_t("feDropShadow", args);
+  }
+  /**
+   *  feFlood - Creates svg feFlood element
+   */
+  export function feFlood(): TagNode<"feFlood">;
+  export function feFlood(props: SVGProps<"feFlood">): TagNode<"feFlood">;
+
+  export function feFlood(...args: any[]): TagNode<"feFlood"> {
+    return _c_t("feFlood", args);
+  }
+  /**
+   *  feFuncA - Creates svg feFuncA element
+   */
+  export function feFuncA(): TagNode<"feFuncA">;
+  export function feFuncA(props: SVGProps<"feFuncA">): TagNode<"feFuncA">;
+
+  export function feFuncA(...args: any[]): TagNode<"feFuncA"> {
+    return _c_t("feFuncA", args);
+  }
+  /**
+   *  feFuncB - Creates svg feFuncB element
+   */
+  export function feFuncB(): TagNode<"feFuncB">;
+  export function feFuncB(props: SVGProps<"feFuncB">): TagNode<"feFuncB">;
+
+  export function feFuncB(...args: any[]): TagNode<"feFuncB"> {
+    return _c_t("feFuncB", args);
+  }
+  /**
+   *  feFuncG - Creates svg feFuncG element
+   */
+  export function feFuncG(): TagNode<"feFuncG">;
+  export function feFuncG(props: SVGProps<"feFuncG">): TagNode<"feFuncG">;
+
+  export function feFuncG(...args: any[]): TagNode<"feFuncG"> {
+    return _c_t("feFuncG", args);
+  }
+  /**
+   *  feFuncR - Creates svg feFuncR element
+   */
+  export function feFuncR(): TagNode<"feFuncR">;
+  export function feFuncR(props: SVGProps<"feFuncR">): TagNode<"feFuncR">;
+
+  export function feFuncR(...args: any[]): TagNode<"feFuncR"> {
+    return _c_t("feFuncR", args);
+  }
+  /**
+   *  feGaussianBlur - Creates svg feGaussianBlur element
+   */
+  export function feGaussianBlur(): TagNode<"feGaussianBlur">;
+  export function feGaussianBlur(
+    props: SVGProps<"feGaussianBlur">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"feGaussianBlur">;
+  export function feGaussianBlur(...args: any[]): TagNode<"feGaussianBlur"> {
+    return _c_t("feGaussianBlur", args);
+  }
+  /**
+   *  feImage - Creates svg feImage element
+   */
+  export function feImage(): TagNode<"feImage">;
+  export function feImage(props: SVGProps<"feImage">): TagNode<"feImage">;
+
+  export function feImage(...args: any[]): TagNode<"feImage"> {
+    return _c_t("feImage", args);
+  }
+  /**
+   *  feMerge - Creates svg feMerge element
+   */
+  export function feMerge(): TagNode<"feMerge">;
+  export function feMerge(props: SVGProps<"feMerge">): TagNode<"feMerge">;
+
+  export function feMerge(...args: any[]): TagNode<"feMerge"> {
+    return _c_t("feMerge", args);
+  }
+  /**
+   *  feMergeNode - Creates svg feMergeNode element
+   */
+  export function feMergeNode(): TagNode<"feMergeNode">;
+  export function feMergeNode(
+    props: SVGProps<"feMergeNode">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"feMergeNode">;
+  export function feMergeNode(...args: any[]): TagNode<"feMergeNode"> {
+    return _c_t("feMergeNode", args);
+  }
+  /**
+   *  feMorphology - Creates svg feMorphology element
+   */
+  export function feMorphology(): TagNode<"feMorphology">;
+  export function feMorphology(
+    props: SVGProps<"feMorphology">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"feMorphology">;
+  export function feMorphology(...args: any[]): TagNode<"feMorphology"> {
+    return _c_t("feMorphology", args);
+  }
+  /**
+   *  feOffset - Creates svg feOffset element
+   */
+  export function feOffset(): TagNode<"feOffset">;
+  export function feOffset(props: SVGProps<"feOffset">): TagNode<"feOffset">;
+
+  export function feOffset(...args: any[]): TagNode<"feOffset"> {
+    return _c_t("feOffset", args);
+  }
+  /**
+   *  fePointLight - Creates svg fePointLight element
+   */
+  export function fePointLight(): TagNode<"fePointLight">;
+  export function fePointLight(
+    props: SVGProps<"fePointLight">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"fePointLight">;
+  export function fePointLight(...args: any[]): TagNode<"fePointLight"> {
+    return _c_t("fePointLight", args);
+  }
+  /**
+   *  feSpecularLighting - Creates svg feSpecularLighting element
+   */
+  export function feSpecularLighting(): TagNode<"feSpecularLighting">;
+  export function feSpecularLighting(
+    props: SVGProps<"feSpecularLighting">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"feSpecularLighting">;
+  export function feSpecularLighting(
+    ...args: any[]
+  ): TagNode<"feSpecularLighting"> {
+    return _c_t("feSpecularLighting", args);
+  }
+  /**
+   *  feSpotLight - Creates svg feSpotLight element
+   */
+  export function feSpotLight(): TagNode<"feSpotLight">;
+  export function feSpotLight(
+    props: SVGProps<"feSpotLight">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"feSpotLight">;
+  export function feSpotLight(...args: any[]): TagNode<"feSpotLight"> {
+    return _c_t("feSpotLight", args);
+  }
+  /**
+   *  feTile - Creates svg feTile element
+   */
+  export function feTile(): TagNode<"feTile">;
+  export function feTile(props: SVGProps<"feTile">): TagNode<"feTile">;
+
+  export function feTile(...args: any[]): TagNode<"feTile"> {
+    return _c_t("feTile", args);
+  }
+  /**
+   *  feTurbulence - Creates svg feTurbulence element
+   */
+  export function feTurbulence(): TagNode<"feTurbulence">;
+  export function feTurbulence(
+    props: SVGProps<"feTurbulence">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"feTurbulence">;
+  export function feTurbulence(...args: any[]): TagNode<"feTurbulence"> {
+    return _c_t("feTurbulence", args);
+  }
+  /**
+   *  filter - Creates svg filter element
+   */
+  export function filter(): TagNode<"filter">;
+  export function filter(props: SVGProps<"filter">): TagNode<"filter">;
+
+  export function filter(...args: any[]): TagNode<"filter"> {
+    return _c_t("filter", args);
+  }
+  /**
+   *  foreignObject - Creates svg foreignObject element
+   */
+  export function foreignObject(): TagNode<"foreignObject">;
+  export function foreignObject(
+    props: SVGProps<"foreignObject">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"foreignObject">;
+  export function foreignObject(...args: any[]): TagNode<"foreignObject"> {
+    return _c_t("foreignObject", args);
+  }
+  /**
+   *  g - Creates svg g element
+   */
+  export function g(): TagNode<"g">;
+  export function g(props: SVGProps<"g">): TagNode<"g">;
+  export function g(...children: ValidNodeChild[]): TagNode<"g">;
+  export function g(
+    props: SVGProps<"g">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"g">;
+  export function g(...args: any[]): TagNode<"g"> {
+    return _c_t("g", args);
+  }
+  /**
+   *  image - Creates svg image element
+   */
+  export function image(): TagNode<"image">;
+  export function image(props: SVGProps<"image">): TagNode<"image">;
+
+  export function image(...args: any[]): TagNode<"image"> {
+    return _c_t("image", args);
+  }
+  /**
+   *  line - Creates svg line element
+   */
+  export function line(): TagNode<"line">;
+  export function line(props: SVGProps<"line">): TagNode<"line">;
+
+  export function line(...args: any[]): TagNode<"line"> {
+    return _c_t("line", args);
+  }
+  /**
+   *  linearGradient - Creates svg linearGradient element
+   */
+  export function linearGradient(): TagNode<"linearGradient">;
+  export function linearGradient(
+    props: SVGProps<"linearGradient">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"linearGradient">;
+  export function linearGradient(...args: any[]): TagNode<"linearGradient"> {
+    return _c_t("linearGradient", args);
+  }
+  /**
+   *  marker - Creates svg marker element
+   */
+  export function marker(): TagNode<"marker">;
+  export function marker(props: SVGProps<"marker">): TagNode<"marker">;
+  export function marker(...children: ValidNodeChild[]): TagNode<"marker">;
+  export function marker(
+    props: SVGProps<"marker">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"marker">;
+  export function marker(...args: any[]): TagNode<"marker"> {
+    return _c_t("marker", args);
+  }
+  /**
+   *  mask - Creates svg mask element
+   */
+  export function mask(): TagNode<"mask">;
+  export function mask(props: SVGProps<"mask">): TagNode<"mask">;
+  export function mask(...children: ValidNodeChild[]): TagNode<"mask">;
+  export function mask(
+    props: SVGProps<"mask">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"mask">;
+  export function mask(...args: any[]): TagNode<"mask"> {
+    return _c_t("mask", args);
+  }
+  /**
+   *  metadata - Creates svg metadata element
+   */
+  export function metadata(): TagNode<"metadata">;
+  export function metadata(props: SVGProps<"metadata">): TagNode<"metadata">;
+
+  export function metadata(...args: any[]): TagNode<"metadata"> {
+    return _c_t("metadata", args);
+  }
+  /**
+   *  mpath - Creates svg mpath element
+   */
+  export function mpath(): TagNode<"mpath">;
+  export function mpath(props: SVGProps<"mpath">): TagNode<"mpath">;
+
+  export function mpath(...args: any[]): TagNode<"mpath"> {
+    return _c_t("mpath", args);
+  }
+  /**
+   *  path - Creates svg path element
+   */
+  export function path(): TagNode<"path">;
+  export function path(props: SVGProps<"path">): TagNode<"path">;
+
+  export function path(...args: any[]): TagNode<"path"> {
+    return _c_t("path", args);
+  }
+  /**
+   *  pattern - Creates svg pattern element
+   */
+  export function pattern(): TagNode<"pattern">;
+  export function pattern(props: SVGProps<"pattern">): TagNode<"pattern">;
+  export function pattern(
+    props: SVGProps<"pattern">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"pattern">;
+
+  export function pattern(...args: any[]): TagNode<"pattern"> {
+    return _c_t("pattern", args);
+  }
+  /**
+   *  polygon - Creates svg polygon element
+   */
+  export function polygon(): TagNode<"polygon">;
+  export function polygon(props: SVGProps<"polygon">): TagNode<"polygon">;
+
+  export function polygon(...args: any[]): TagNode<"polygon"> {
+    return _c_t("polygon", args);
+  }
+  /**
+   *  polyline - Creates svg polyline element
+   */
+  export function polyline(): TagNode<"polyline">;
+  export function polyline(props: SVGProps<"polyline">): TagNode<"polyline">;
+
+  export function polyline(...args: any[]): TagNode<"polyline"> {
+    return _c_t("polyline", args);
+  }
+  /**
+   *  radialGradient - Creates svg radialGradient element
+   */
+  export function radialGradient(): TagNode<"radialGradient">;
+  export function radialGradient(
+    props: SVGProps<"radialGradient">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"radialGradient">;
+  export function radialGradient(...args: any[]): TagNode<"radialGradient"> {
+    return _c_t("radialGradient", args);
+  }
+  /**
+   *  rect - Creates svg rect element
+   */
+  export function rect(): TagNode<"rect">;
+  export function rect(props: SVGProps<"rect">): TagNode<"rect">;
+  export function rect(...children: ValidNodeChild[]): TagNode<"rect">;
+  export function rect(
+    props: SVGProps<"rect">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"rect">;
+  export function rect(...args: any[]): TagNode<"rect"> {
+    return _c_t("rect", args);
+  }
+  /**
+   *  script - Creates svg script element
+   */
+  export function script(): TagNode<"script">;
+  export function script(props: SVGProps<"script">): TagNode<"script">;
+
+  export function script(...args: any[]): TagNode<"script"> {
+    return _c_t("script", args);
+  }
+  /**
+   *  set - Creates svg set element
+   */
+  export function set(): TagNode<"set">;
+  export function set(props: SVGProps<"set">): TagNode<"set">;
+
+  export function set(...args: any[]): TagNode<"set"> {
+    return _c_t("set", args);
+  }
+  /**
+   *  stop - Creates svg stop element
+   */
+  export function stop(): TagNode<"stop">;
+  export function stop(props: SVGProps<"stop">): TagNode<"stop">;
+
+  export function stop(...args: any[]): TagNode<"stop"> {
+    return _c_t("stop", args);
+  }
+  /**
+   *  style - Creates svg style element
+   */
+  export function style(): TagNode<"style">;
+  export function style(props: SVGProps<"style">): TagNode<"style">;
+
+  export function style(...args: any[]): TagNode<"style"> {
+    return _c_t("style", args);
+  }
+  /**
+   *  svg - Creates svg svg element
+   */
+  export function svg(): TagNode<"svg">;
+  export function svg(props: SVGProps<"svg">): TagNode<"svg">;
+
+  export function svg(...args: any[]): TagNode<"svg"> {
+    return _c_t("svg", args);
+  }
+  /**
+   *  switch - Creates svg switch element
+   */
+  export function _switch(): TagNode<"switch">;
+  export function _switch(props: SVGProps<"switch">): TagNode<"switch">;
+
+  export function _switch(...args: any[]): TagNode<"switch"> {
+    return _c_t("switch", args);
+  }
+  /**
+   *  symbol - Creates svg symbol element
+   */
+  export function symbol(): TagNode<"symbol">;
+  export function symbol(props: SVGProps<"symbol">): TagNode<"symbol">;
+  export function symbol(...children: ValidNodeChild[]): TagNode<"symbol">;
+  export function symbol(
+    props: SVGProps<"symbol">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"symbol">;
+
+  export function symbol(...args: any[]): TagNode<"symbol"> {
+    return _c_t("symbol", args);
+  }
+  /**
+   *  text - Creates svg text element
+   */
+  export function text(): TagNode<"text">;
+  export function text(props: SVGProps<"text">): TagNode<"text">;
+
+  export function text(...args: any[]): TagNode<"text"> {
+    return _c_t("text", args);
+  }
+  /**
+   *  textPath - Creates svg textPath element
+   */
+  export function textPath(): TagNode<"textPath">;
+  export function textPath(props: SVGProps<"textPath">): TagNode<"textPath">;
+
+  export function textPath(...args: any[]): TagNode<"textPath"> {
+    return _c_t("textPath", args);
+  }
+  /**
+   *  title - Creates svg title element
+   */
+  export function title(): TagNode<"title">;
+  export function title(props: SVGProps<"title">): TagNode<"title">;
+  export function title(...children: ValidNodeChild[]): TagNode<"title">;
+  export function title(
+    props: SVGProps<"title">,
+    ...children: ValidNodeChild[]
+  ): TagNode<"title">;
+  export function title(...args: any[]): TagNode<"title"> {
+    return _c_t("title", args);
+  }
+  /**
+   *  tspan - Creates svg tspan element
+   */
+  export function tspan(): TagNode<"tspan">;
+  export function tspan(props: SVGProps<"tspan">): TagNode<"tspan">;
+
+  export function tspan(...args: any[]): TagNode<"tspan"> {
+    return _c_t("tspan", args);
+  }
+  /**
+   *  use - Creates svg use element
+   */
+  export function use(): TagNode<"use">;
+  export function use(props: SVGProps<"use">): TagNode<"use">;
+
+  export function use(...args: any[]): TagNode<"use"> {
+    return _c_t("use", args);
+  }
+  /**
+   *  view - Creates svg view element
+   */
+  export function view(): TagNode<"view">;
+  export function view(props: SVGProps<"view">): TagNode<"view">;
+
+  export function view(...args: any[]): TagNode<"view"> {
+    return _c_t("view", args);
+  }
 }
