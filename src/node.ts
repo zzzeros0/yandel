@@ -139,13 +139,8 @@ interface SwitchableNode<T extends Node> {
   switch(t: T): boolean;
 }
 type FutureNode = () => ValidNodeChild;
-type ValidNodeChild =
-  | Node
-  | Component
-  | Component<KeyedObject>
-  | FutureNode
-  | null
-  | string;
+type ValidNode = Node | Component | Component<KeyedObject> | FutureNode;
+type ValidNodeChild = ValidNode | null | string;
 type ValidTemplateReturn = ValidNodeChild | ValidNodeChild[];
 type EffectHandler = (() => void) | (() => () => void);
 type ExcludeFunctions<T> = {
@@ -1412,6 +1407,8 @@ export {
   Stores,
   Styles,
   TagNode,
+  ValidNode,
   ValidNodeChild,
   ValidTemplateReturn,
+  FutureNode,
 };

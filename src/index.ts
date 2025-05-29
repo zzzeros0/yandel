@@ -11,7 +11,9 @@ export {
   StateHandler,
   Stores,
   Styles,
+  ValidNode,
   ValidNodeChild,
   ValidTemplateReturn,
+  FutureNode,
 } from "./node";
 export * from "./tags";
