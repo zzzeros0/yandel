@@ -124,8 +124,8 @@ Allows you to mount elements over a different parent, remaining in the same tree
 import { Portal, div, span, h1 } from "yandel";
 
 
-Portal(document.body, div());
 // Renders a div inside body
+Portal(document.body, div());
 
 Portal(document.querySelector("#someid")!, div(), span(), h1(), ...);
 
@@ -136,7 +136,7 @@ Example:
 ```ts
 import { Portal, div, span, ValidTemplateReturn } from "yandel";
 
-function Notification(): ValidTemplateReturn {
+function Notifications(): ValidTemplateReturn {
   return div(
     Portal(document.body, span("Notification 1"), span("Notification 2")),
     button("Remove notifications")
@@ -149,10 +149,18 @@ function Notification(): ValidTemplateReturn {
 
 ### Templates
 
-Templates are functions that return nodes. They help you customize and modularize:
+Templates are functions that return `ValidNodeChild`. They help you customize and modularize:
 
 ```ts
-import { div, p, strong, span, button, ValidTemplateReturn } from "yandel";
+import {
+  aside,
+  div,
+  p,
+  strong,
+  span,
+  button,
+  ValidTemplateReturn,
+} from "yandel";
 
 function TotalPriceButton(
   qTy: number,
@@ -165,29 +173,89 @@ function TotalPriceButton(
   );
 }
 
-TotalPriceButton(4, 2, () => buy());
+aside(TotalPriceButton(4, 2, () => buy()));
 /**
+ * <aside>
  *  <div>
  *      <p><strong>Total is:</strong>8 $</>
  *      <button>Buy</button>
  *  </div>
+ * </aside>
  */
 ```
 
-### Components
-
-Components add the reactivity to the game. They are defined extending the `Context` class and must provide a `render` method (a template):
+Templates can return an array, when no parent is needed:
 
 ```ts
-import {
-  Component,
-  div,
-  p,
-  strong,
-  span,
-  button,
-  ValidTemplateReturn,
-} from "yandel";
+function NotificationList(notifications: string[]): ValidTemplateReturn {
+  return notifications.map((notification) => div(icon(), span(notification)));
+}
+
+function AppNotifications() {
+  const notifications: string[] = [...];
+  return div(...NotificationList(notifications));
+}
+```
+
+#### Future node
+
+Future nodes are `templates` (functions) and will be created at render time (as `components` and `text`). This applies for all type of functions that return a `ValidTemplateReturn`; also the generic tags like `div`, `span`, etc. are allowed
+
+```ts
+import { div, main, nav } from "yandel"
+
+function MyGridOfPhotos () {
+  return div(...);
+}
+
+function App () {
+  return main(
+    nav(...),
+    MyGridOfPhotos // This function will be executed at render time
+  )
+}
+
+```
+
+This might be necessary in some kind of situations, like explained in the [`Contexts`](#contexts) section.
+
+In this example:
+
+```ts
+import { button, div, p } from "yandel";
+
+function BuyButton(onclick: EventListener) {
+  return button(
+    {
+      onclick,
+      className: "button",
+    },
+    "Buy"
+  );
+}
+
+function TotalPriceButton(price: number) {
+  const handleBuy = () => {
+    ...
+  };
+  return div(p(`Total is: ${price}`), BuyButton(handleBuy));
+}
+```
+
+The tree will be completely generated when you call `TotalPriceButton`.
+
+```ts
+return div(p(`Total is: ${price}`), () => BuyButton(handleBuy));
+```
+
+Now, `BuyButton` will be created at render time.
+
+### Components
+
+Components add the reactivity to the game. They are defined extending the `Component` class and must provide a `render` method (a template):
+
+```ts
+import { Component, div, p, strong, button, ValidTemplateReturn } from "yandel";
 
 class TotalPriceButton extends Component {
   private readonly total: number;
@@ -199,7 +267,7 @@ class TotalPriceButton extends Component {
   }
   public render(): ValidTemplateReturn {
     return div(
-      p(strong("Total is:"), span(`${this.total} $`)),
+      p(strong("Total is:"), ` ${this.total} $`),
       button({ onclick: this.onClick }, "Buy")
     );
   }
@@ -223,21 +291,13 @@ section(new TotalPriceButton(4, 2, buyFn));
 Components can return an array:
 
 ```ts
-class TotalPriceButton extends Component {
-  private readonly total: number;
-  private readonly onClick: VoidFunction;
-  constructor(qTy: number, uPrice: number, onClick: VoidFunction) {
-    super();
-    this.total = qTy * uPrice;
-    this.onClick = onClick;
-  }
-  public render(): ValidTemplateReturn {
-    return [
-      p(strong("Total is:"), span(`${this.total} $`)),
-      button({ onclick: this.onClick }, "Buy"),
-    ];
-  }
+public render(): ValidTemplateReturn {
+  return [
+    p(strong("Total is:"), span(`${this.total} $`)),
+    button({ onclick: this.onClick }, "Buy"),
+  ];
 }
+
 ```
 
 #### Reactivity
@@ -245,15 +305,7 @@ class TotalPriceButton extends Component {
 `State` object type is defined using the `Component's` generic argument. To set the `initial state`, `defineState` must be called in the constructor.
 
 ```ts
-import {
-  Component,
-  div,
-  p,
-  strong,
-  span,
-  button,
-  ValidTemplateReturn,
-} from "yandel";
+import { Component, div, p, strong, button, ValidTemplateReturn } from "yandel";
 
 class TotalPriceButton extends Component<{
   loading: boolean;
@@ -279,7 +331,7 @@ class TotalPriceButton extends Component<{
   }
   public render(): ValidTemplateReturn {
     return div(
-      p(strong("Total is:"), span(`${this.total} $`)),
+      p(strong("Total is:"), ` ${this.total} $`),
       button(
         {
           onclick: this.handleClick.bind(this), // Don't forget to bind if needed
@@ -323,7 +375,7 @@ this.state = { loading: false }; // state is a read-only property!
 
 ---
 
-`Effects` are callbacks that are executed when the component is mounted or unmounted. They are created with `this.effect` and should be called inside the `render` method. Components can have more than one effect/cleanup and they're executed in the order they are defined (FIFO).
+`Effects` are callbacks that are executed when the component is attached or updated. They are created providing a callback to `this.effect` and should be called inside the `render` method. Components can have more than one effect/cleanup and they're executed in the order they are defined (FIFO).
 
 ```ts
 import { Component, p, ValidTemplateReturn } from "yandel";
@@ -414,8 +466,8 @@ public render(): ValidTemplateReturn {
 
 ```
 
-In this example, if the component is removed, if not handled the timeout will run and an error will be thrown (`Error: Component is deleted`).
-Handle timeouts, deletions and more in the cleanups to prevent weird behavior:
+In this example, if the component is removed or updated by other reasons, the timeout will still run and an error will be thrown (`Error: Component is deleted`).
+Handle timeouts and more in the cleanups to prevent weird behavior:
 
 ```ts
 
@@ -437,7 +489,7 @@ public render(): ValidTemplateReturn {
 
 ### Contexts
 
-Sharing data between components is easier with `contexts`. Define your context using `createContext`:
+Sharing data is easier with `contexts`. Define your context using `createContext`:
 
 ```ts
 import { createContext } from "yandel";
@@ -453,7 +505,7 @@ Then, inside of your `render` function, call `provide` to hydrate your context. 
 - The component's instance.
 - The value to store in the context.
 
-Contexts that have not been provided are inaccesible. **A context can't be provided by more than one component**.
+Contexts that have not been provided are inaccesible. **A context can't be provided by more than one component at the same time**.
 
 ```ts
 
@@ -468,22 +520,10 @@ class UserProvider extends Component<{user: User | null}> {
 }
 ```
 
-Once it has been provided, it's accesible everywhere, even for non descendant nodes (if so, you must be responsible of the context life-time, and when/where is or not aviable).
-**Note**: when a component provider changes (for example, a setState update), the context value will be again provided (re-hydrated). Don't forget that nodes that are not a child inside the component's tree won't be updated:
+Once it has been provided, it's accesible everywhere, even for those that are not children (if so, you must be responsible of the context life-time, and when/where is or not aviable).
+**Note**: when a component provider changes (for example, a setState update), the context value will be again provided (re-hydrated) by the render function. Don't forget that nodes that are not a child of the component's tree won't be updated:
 
-```ts
-public render(): ValidTemplateReturn {
-  return [
-    new UserProvider(),
-    UserConsumer()
-  ];
-}
-// UserProvider provides the context.
-// As it is before the consumer, the consumer will be able to consume it (if the consumer is called before the provider, an error would be thrown)
-// When UserProvider changes (state update) its children will update. Therefore UserConsumer won't be updated.
-```
-
-To consume a context, call `consume`. You can call this from a Component, a template, or wherever you want.
+To consume a context, call `consume`;
 
 ```ts
 function UserConsumer() {
@@ -498,7 +538,7 @@ class UserConsumer extends Component {
   }
 }
 
-function notAnUiFunction () {
+function nonUiFunction () {
    const { user } = userContext.consume();
    ...;
 }
@@ -519,7 +559,6 @@ function UserConsumerWithError() {
 
 ```ts
 function UserConsumerWithError() {
-  // Not checking if context is accesible
   const { user } = userContext.consume(); // Error: cannot destructure property as it's undefined!!
   return ...;
 }
@@ -527,19 +566,21 @@ function UserConsumerWithError() {
 
 #### Future nodes
 
-In this previous example:
+As explained in the section of [future nodes](#future-node), `components`, `text` and `future nodes` are created at render time, and if your consumer is a function, like in the next example:
 
 ```ts
-public render(): ValidTemplateReturn {
-  return [
-    new UserProvider(),
-    UserConsumer()
-  ];
+function UserConsumer() {
+  const { user } = userContext.consume();
+  return ...;
+}
+class App extends Component {
+  public render(): ValidTemplateReturn {
+    return [new UserProvider(), UserConsumer()];
+  }
 }
 ```
 
-`UserConsumer` won't be able to access the `UserContext`. `UserConsumer` is called before the `UserProvider` `render` method.
-In this situations, you can use `Future Nodes`. They are functions that are valid as child, and will be created at render time.
+`UserConsumer` will be created before the `UserProvider` is rendered and provides, leading to an undefined context.
 
 ```ts
 public render(): ValidTemplateReturn {
@@ -550,7 +591,7 @@ public render(): ValidTemplateReturn {
 }
 ```
 
-Now, `UserConsumer` will be able to consume.
+Now, `UserConsumer` will be able to consume. Don't forget that nodes outside the provider component
 
 ### Ref
 

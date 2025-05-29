@@ -25,8 +25,35 @@ interface Deletable {
   get [DELETED_KEY](): boolean;
   set [DELETED_KEY](v: boolean);
 }
-export function asDeletable(t: object) {
-  return t as Deletable;
+interface ExposedDeletable {
+  deleted: boolean;
+  delete(): void;
+}
+export function asDeletable(t: object): ExposedDeletable {
+  return Object.defineProperties(
+    {},
+    {
+      delete: {
+        value: () => {
+          (t as Deletable)[DELETE_KEY]();
+        },
+        writable: false,
+        enumerable: false,
+        configurable: false,
+      },
+      deleted: {
+        set: (v: boolean) => {
+          if (typeof v !== "boolean") return;
+          (t as Deletable)[DELETED_KEY] = v;
+        },
+        get: () => {
+          return (t as Deletable)[DELETED_KEY];
+        },
+        enumerable: false,
+        configurable: false,
+      },
+    }
+  ) as ExposedDeletable;
 }
 export function setDeletable(t: object, deleter: VoidFunction) {
   let _d = false;

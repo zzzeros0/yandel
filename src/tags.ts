@@ -662,7 +662,7 @@ export function hgroup(...args: any[]): TagNode<"hgroup"> {
 /**
  * hr - Creates hr Tag node
  */
-export function hr(props: HTMLProps<"hr">): TagNode<"hr"> {
+export function hr(props?: HTMLProps<"hr">): TagNode<"hr"> {
   return props ? _c_t("hr", [props]) : _c_t("hr");
 }
 

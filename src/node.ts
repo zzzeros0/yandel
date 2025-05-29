@@ -367,7 +367,8 @@ class ComponentUpdateQueue {
 function queueNodesDeletion(ns: ValidNodeChild[]) {
   queueMicrotask(() => {
     for (const c of ns) {
-      if (c && !_is_string(c) && !_is_fn(c) && !Component.is(c)) c.delete();
+      if (c instanceof Node) c.delete();
+      else console.warn("Unknown child");
     }
   });
 }
@@ -462,13 +463,16 @@ class ContentNode extends Node {
     super.delete();
   }
 }
-function _get_node_from_future(t: FutureNode) {
-  let n: ValidNodeChild;
+function create_template(t: FutureNode) {
   try {
-    n = t();
+    return t();
   } catch (error) {
-    throw new Error("Future error");
+    throw new Error(`Template create error: ${error}`);
   }
+}
+function _get_node_from_future(t: FutureNode) {
+  const n = create_template(t);
+
   if (_is_fn(n)) return _get_node_from_future(n);
   return n;
 }
@@ -514,7 +518,6 @@ function _apply_dom_prop<T extends HTMLTags | HTMLSVGTags>(
       return;
     }
   }
-  // const pn = prop.toLowerCase();
   if (typeof v === "boolean") {
     if (v) dom.setAttribute(prop, "");
     else dom.removeAttribute(prop);
@@ -545,7 +548,6 @@ function _remove_dom_prop<T extends HTMLTags | HTMLSVGTags>(
   if (prop === "style" && typeof v === "object") {
     try {
       Object.entries(v).forEach(([cssProp]) => {
-        // Solo aplicar si la propiedad existe en CSSStyleDeclaration
         if (cssProp in dom.style) {
           dom.style[cssProp as any] = "";
         } else {
@@ -794,20 +796,22 @@ class ComponentNode extends Node implements SwitchableNode<ComponentNode> {
   }
   public create() {
     if (this._deleted) throw new Error("Attempt to create a deleted node");
-    if ((this._template as any as HasInternals)._deleted)
+    if (asDeletable(this._template).deleted)
       throw new Error("Template has been deleted");
     nextInternalTick(this._template);
-    let child: ValidTemplateReturn;
     try {
-      try {
-        child = this._template.render();
-      } catch (error) {
-        console.warn("Template create error:", error);
+      const child = create_template(
+        this._template.render.bind(this._template) as FutureNode
+      );
+
+      if (child == null) {
+        if (this.hasChildren) {
+          this.clearChildren();
+        }
         return;
       }
-      if (child == null) return;
       const nc = Array.isArray(child)
-        ? child
+        ? [...child]
         : typeof child === "string"
         ? [new ContentNode(child)]
         : [child];
@@ -842,7 +846,7 @@ class ComponentNode extends Node implements SwitchableNode<ComponentNode> {
   public override delete() {
     if (this._deleted) return;
     this.clearChildren();
-    (this._template as any as HasInternals)._delete();
+    asDeletable(this._template).delete();
     super.delete();
   }
   public switch(t: ComponentNode): boolean {
@@ -859,7 +863,7 @@ class ComponentNode extends Node implements SwitchableNode<ComponentNode> {
     return this.needs_update;
   }
   public switchTemplate(t: Component<any>) {
-    (this._template as any as HasInternals)._delete();
+    asDeletable(this._template).delete();
     this._template = t;
     getInternals(this._template).switch(this);
     this.needs_update = true;
@@ -874,8 +878,8 @@ class ComponentInternals<S extends KeyedObject | void = void> {
   private _state: S | undefined = undefined;
   private _state_defined = false;
   private _deleted = false;
-  public switch(n: ComponentNode) {
-    this.#_n = n;
+  public switch(n: ComponentNode): void {
+    this.#_n = n as ComponentNode;
   }
   public get n() {
     return this.#_n;
@@ -929,7 +933,7 @@ class ComponentInternals<S extends KeyedObject | void = void> {
     this._state = undefined;
     this._state_defined = false;
     for (const c of this.p) {
-      asDeletable(c)[DELETE_KEY]();
+      asDeletable(c).delete();
     }
   }
   public get deleted() {
@@ -980,35 +984,21 @@ function nextInternalTick<S extends KeyedObject | void = void>(
 }
 
 abstract class Component<S extends KeyedObject | void = void> {
+  // public readonly id = Symbol();
   public static is(t: any): t is Component | Component<KeyedObject> {
     return t instanceof this;
   }
   constructor() {
-    let deleted = false;
+    setDeletable(this, () => {
+      nextInternalTick(this);
+      deleteInternals(this);
+    });
     Object.defineProperties(this, {
       [ComponentInternalKey]: {
         value: new ComponentInternals(),
         enumerable: false,
         writable: false,
         configurable: true,
-      },
-      _deleted: {
-        get: () => deleted,
-        set: (d: boolean) => {
-          deleted = d;
-        },
-        configurable: false,
-        enumerable: false,
-      },
-      _delete: {
-        value: () => {
-          nextInternalTick(this);
-          deleteInternals(this);
-          (this as any as HasInternals)._deleted = true;
-        },
-        writable: false,
-        configurable: false,
-        enumerable: false,
       },
     });
   }
@@ -1041,17 +1031,17 @@ class Context<T extends KeyedObject> {
     });
   }
   public get ok() {
-    return asDeletable(this)[DELETED_KEY] === false && this.#_p !== undefined;
+    return asDeletable(this).deleted === false && this.#_p !== undefined;
   }
   public consume(): T {
-    if (asDeletable(this)[DELETED_KEY] && !this.#_p) {
+    if (asDeletable(this).deleted && !this.#_p) {
       console.warn("You are consuming a deleted context");
       return undefined as any;
     }
     return this.#_s.stores as T;
   }
   public provide<S extends KeyedObject | void = void>(c: Component<S>, v: T) {
-    asDeletable(this)[DELETED_KEY] = false;
+    asDeletable(this).deleted = false;
     if (this.#_p) {
       getInternals(this.#_p).p.delete(this);
       this.#_p = undefined;
@@ -1115,7 +1105,7 @@ function diffChildren(a: ValidNodeChild[], b: ValidNodeChild[]): boolean {
         continue;
       }
       if (_is_string(ca) || _is_fn(ca)) {
-        console.warn("Diffing a Future node");
+        console.warn("Not a valid node to diff");
         continue;
       } else if (Component.is(ca)) {
         if (!ComponentNode.is(cb)) {
@@ -1153,34 +1143,38 @@ function diffChildren(a: ValidNodeChild[], b: ValidNodeChild[]): boolean {
             }
           } else if (Component.is(node)) {
             if (ComponentNode.is(ca)) {
+              if (node === ca.template) {
+                ca.needs_update = true;
+                continue;
+              }
               ca.switchTemplate(node);
             } else {
               ca.delete();
               a[i] = new ComponentNode(node).setIndex_of(ri++);
-              changed.set(true);
             }
-          } else {
-            if (ca.$typeof !== node.$typeof) {
-              ca.delete();
-              a[i] = node.setIndex_of(ri++);
-              changed.set(true);
-            } else changed.set(diff(ca, node));
-          }
+            changed.set(true);
+          } else if (ca.$typeof !== node.$typeof) {
+            ca.delete();
+            a[i] = node.setIndex_of(ri++);
+            changed.set(true);
+          } else changed.set(diff(ca, node));
         } else if (Component.is(cb)) {
           if (ComponentNode.is(ca)) {
+            if (cb === ca.template) {
+              ca.needs_update = true;
+              continue;
+            }
             ca.switchTemplate(cb);
           } else {
             ca.delete();
             a[i] = new ComponentNode(cb).setIndex_of(ri++);
             changed.set(true);
           }
-        } else {
-          if (ca.$typeof !== cb.$typeof) {
-            ca.delete();
-            a[i] = cb.setIndex_of(ri++);
-            changed.set(true);
-          } else changed.set(diff(ca, cb));
-        }
+        } else if (ca.$typeof !== cb.$typeof) {
+          ca.delete();
+          a[i] = cb.setIndex_of(ri++);
+          changed.set(true);
+        } else changed.set(diff(ca, cb));
       }
     }
   }
