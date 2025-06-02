@@ -2,8 +2,6 @@ import {
   _is_fn,
   _is_string,
   asDeletable,
-  DELETE_KEY,
-  DELETED_KEY,
   InmutBool,
   setDeletable,
 } from "./utils";
@@ -318,7 +316,7 @@ class Stores<T> {
     this.#_stores = s;
   }
 }
-class ComponentUpdateQueue {
+class UpdateQueue {
   private static _update_scheduled = false;
   private static _queue: Set<ComponentNode> = new Set();
   private static processNodeQueue() {
@@ -358,15 +356,15 @@ class ComponentUpdateQueue {
     this._queue.add(n);
     if (!this._update_scheduled) this.notifyQueue();
   }
+  public static queueNodesDeletion(ns: ValidNodeChild[]) {
+    queueMicrotask(() => {
+      for (const c of ns) {
+        if (c && c instanceof Node) c.delete();
+      }
+    });
+  }
 }
-function queueNodesDeletion(ns: ValidNodeChild[]) {
-  queueMicrotask(() => {
-    for (const c of ns) {
-      if (c instanceof Node) c.delete();
-      else console.warn("Unknown child");
-    }
-  });
-}
+
 const ComponentInternalKey = Symbol("_$ci$_");
 
 function _c_el<T extends HTMLTags>(t: T) {
@@ -458,20 +456,10 @@ class ContentNode extends Node {
     super.delete();
   }
 }
-function create_template(t: FutureNode) {
-  try {
-    return t();
-  } catch (error) {
-    throw new Error(`Template create error: ${error}`);
-  }
+function _create_html_tag<T extends HTMLTags | HTMLSVGTags>(tag: T) {
+  return SVG_TAGS.has(tag) ? _c_s(tag) : _c_el(tag as HTMLTags);
 }
-function _get_node_from_future(t: FutureNode) {
-  const n = create_template(t);
-
-  if (_is_fn(n)) return _get_node_from_future(n);
-  return n;
-}
-function _apply_dom_prop<T extends HTMLTags | HTMLSVGTags>(
+function _apply_html_prop<T extends HTMLTags | HTMLSVGTags>(
   dom: AnyElement<T>,
   props: AnyProps<T>,
   prop: string
@@ -521,7 +509,7 @@ function _apply_dom_prop<T extends HTMLTags | HTMLSVGTags>(
   if (typeof v === "number") dom.setAttribute(prop, v.toString());
   else dom.setAttribute(prop, v as string);
 }
-function _remove_dom_prop<T extends HTMLTags | HTMLSVGTags>(
+function _remove_html_prop<T extends HTMLTags | HTMLSVGTags>(
   dom: AnyElement<T>,
   props: AnyProps<T>,
   prop: string
@@ -536,10 +524,19 @@ function _remove_dom_prop<T extends HTMLTags | HTMLSVGTags>(
   }
   if (prop === "ref" && props.ref instanceof Stores) {
     props.ref.stores = undefined;
-    return;
   }
   const v = props[prop as keyof AnyProps<T>];
-  if (v == null) return;
+  if (v == null) {
+    if (prop === "style") return;
+    if (prop in dom) {
+      try {
+        (dom as any)[prop] = undefined;
+      } catch (error) {
+        console.error("Remove prop error:", error);
+      }
+    }
+    return;
+  }
   if (prop === "style" && typeof v === "object") {
     try {
       Object.entries(v).forEach(([cssProp]) => {
@@ -562,21 +559,107 @@ function _remove_dom_prop<T extends HTMLTags | HTMLSVGTags>(
         switch (t) {
           case "boolean": {
             (dom as any)[prop] = false;
-            return;
+            break;
           }
           case "string": {
             (dom as any)[prop] = "";
-            return;
+            break;
           }
           case "object": {
-            (dom as any)[prop] = null;
-            return;
+            (dom as any)[prop] = undefined;
+            break;
           }
         }
       } catch (error) {}
   }
 
   dom.removeAttribute(prop);
+}
+interface PropsDiff<T extends HTMLTags | HTMLSVGTags> {
+  apply: AnyProps<T>;
+  remove: AnyProps<T>;
+}
+
+function _get_props_diff<T extends HTMLTags | HTMLSVGTags>(
+  a: AnyProps<T>,
+  b: AnyProps<T>
+): PropsDiff<T> {
+  const _to_remove = {} as AnyProps<T>;
+  const _to_apply = {} as AnyProps<T>;
+
+  for (const key in a) {
+    if (!b.hasOwnProperty(key)) {
+      _to_remove[key] = a[key];
+    }
+  }
+
+  for (const key in b) {
+    if (b[key] == null) {
+      _to_remove[key] = b[key];
+    } else {
+      if (b[key] === a[key]) continue;
+      _to_apply[key] = b[key];
+    }
+  }
+  return {
+    apply: _to_apply,
+    remove: _to_remove,
+  };
+}
+
+// function _diff_html_props<T extends HTMLTags | HTMLSVGTags>(
+//   dom: AnyElement<T>,
+//   a: AnyProps<T>,
+//   b: AnyProps<T>
+// ) {
+//   for (const prop of Object.keys(a)) {
+//     if (prop.startsWith("on")) {
+//       _remove_html_prop(dom, a, prop);
+//       if (prop in b) _apply_html_prop(dom, b, prop);
+//     } else if (!(prop in b)) {
+//       _remove_html_prop(dom, a, prop);
+//     } else _apply_html_prop(dom, b, prop);
+//   }
+// }
+function _clear_events<T extends HTMLTags | HTMLSVGTags>(
+  dom: AnyElement<T>,
+  props: AnyProps<T>
+) {
+  for (const prop of Object.keys(props)) {
+    if (prop.startsWith("on")) {
+      if (typeof props[prop as keyof AnyProps<T>] !== "function") continue;
+      const ev_name = prop.slice(2);
+      dom.removeEventListener(
+        ev_name,
+        props[prop as keyof AnyProps<T>] as VoidFunction
+      );
+      delete props[prop as keyof AnyProps<T>];
+    }
+  }
+}
+function _apply_props<T extends HTMLTags | HTMLSVGTags>(
+  dom: AnyElement<T>,
+  props: AnyProps<T>
+) {
+  for (const prop of Object.keys(props)) {
+    _apply_html_prop(dom, props, prop);
+  }
+}
+function _clear_props<T extends HTMLTags | HTMLSVGTags>(
+  dom: AnyElement<T>,
+  props: AnyProps<T>
+) {
+  for (const prop of Object.keys(props)) {
+    _remove_html_prop(dom, props, prop);
+  }
+}
+function _remove_style<T extends HTMLTags | HTMLSVGTags>(
+  dom: AnyElement<T>,
+  styles: Styles
+) {
+  for (const style of Object.keys(styles)) {
+    (dom.style as any)[style] = "";
+  }
 }
 class TagNode<T extends HTMLTags | HTMLSVGTags = HTMLTags>
   extends Node
@@ -601,49 +684,27 @@ class TagNode<T extends HTMLTags | HTMLSVGTags = HTMLTags>
     this._children = children;
     this.needs_update = true;
   }
-  private _apply_dom_props() {
-    if (!this._props || !this._dom) return;
-    for (const prop in this._props) {
-      _apply_dom_prop(this._dom, this._props, prop);
-    }
-  }
   private _diff_dom_props(nprops: AnyProps<T>) {
-    if (!this._props) {
-      this._props = nprops;
-      this._apply_dom_props();
-      return;
-    }
-    if (this._dom)
-      for (const prop in this._props) {
-        if (prop.startsWith("on")) {
-          _remove_dom_prop(this._dom, this._props, prop);
-          if (prop in nprops) _apply_dom_prop(this._dom, nprops, prop);
-        } else if (!(prop in nprops)) {
-          _remove_dom_prop(this._dom, this._props, prop);
-        } else _apply_dom_prop(this._dom, nprops, prop);
+    if (this._dom) {
+      if (this._props) {
+        if (this._props.style) {
+          _remove_style(this._dom, this._props.style);
+          delete this._props.style;
+        }
+        _clear_events(this._dom, this._props);
+        const diff = _get_props_diff(this._props, nprops);
+        _clear_props(this._dom, diff.remove);
+        _apply_props(this._dom, diff.apply);
+        this._props = nprops;
+      } else {
+        this._props = nprops;
+        _apply_props(this._dom, this._props);
+        return;
       }
+    }
     this._props = nprops;
   }
-  private _clear_dom_props() {
-    if (this._props && this._dom)
-      for (const prop in this._props) {
-        _remove_dom_prop(this._dom, this._props, prop);
-      }
-  }
-  private _clear_dom_events() {
-    if (this._props && this._dom)
-      for (const prop in this._props) {
-        const v = Reflect.get(this._props, prop);
-        if (!v) continue;
-        if (prop.startsWith("on") && typeof v === "function") {
-          const ev_name = prop.slice(2);
-          this._dom.removeEventListener(
-            ev_name,
-            Reflect.get(this._props, prop) as VoidFunction
-          );
-        }
-      }
-  }
+
   public get dom() {
     return this._dom;
   }
@@ -660,21 +721,22 @@ class TagNode<T extends HTMLTags | HTMLSVGTags = HTMLTags>
   public create() {
     if (this._deleted) throw new Error("Attempt to create a deleted node");
     if (this._dom) {
-      this._apply_dom_props();
-      this.needs_update = true;
-      return true;
+      if (this._props) {
+        _apply_props(this._dom, this._props);
+        this.needs_update = true;
+        return true;
+      }
+      return false;
     }
-    this._dom = (
-      SVG_TAGS.has(this.tag) ? _c_s(this.tag) : _c_el(this.tag as HTMLTags)
-    ) as AnyElement<T>;
-    this._apply_dom_props();
+    this._dom = _create_html_tag(this.tag) as AnyElement<T>;
+    if (this._props) _apply_props(this._dom, this._props);
     this.needs_update = false;
     return true;
   }
   public clearChildren() {
     if (this._deleted) return;
     if (this._children?.length) {
-      queueNodesDeletion(this._children);
+      UpdateQueue.queueNodesDeletion(this._children);
       delete this._children;
     }
   }
@@ -684,7 +746,7 @@ class TagNode<T extends HTMLTags | HTMLSVGTags = HTMLTags>
       return;
     }
     this.needs_update = true;
-    this._clear_dom_events();
+    if (this._props) _clear_events(this._dom, this._props);
     this._dom.remove();
     delete this._dom;
   }
@@ -697,12 +759,19 @@ class TagNode<T extends HTMLTags | HTMLSVGTags = HTMLTags>
     this.clearChildren();
     super.delete();
   }
-  public switch(t: TagNode<HTMLTags>): boolean {
+  public switch(t: TagNode): boolean {
     this.key = t.props?.key ?? t.key;
     if (this.tag === t.tag) {
       // Tag is the same
-      if (t.props) this._diff_dom_props(t.props as AnyProps<T>);
-      else if (this._props) this._clear_dom_props();
+      if (this._dom) {
+        if (this._props) {
+          if (t.props) this._diff_dom_props(t.props as AnyProps<T>);
+          else _clear_props(this._dom, this._props);
+        } else if (t.props) {
+          this._props = t.props as AnyProps<T>;
+          _apply_props(this._dom, this._props);
+        }
+      } else if (t.props) this._props = t.props as AnyProps<T>;
     } else {
       // Tag has changed
       this.clearDom();
@@ -750,7 +819,7 @@ class ParentNode<T extends HTMLElement = HTMLElement>
   public clearChildren(): void {
     this.child_length = 0;
     if (this._children?.length) {
-      queueNodesDeletion(this._children);
+      UpdateQueue.queueNodesDeletion(this._children);
       delete this._children;
     }
   }
@@ -775,6 +844,19 @@ class ParentNode<T extends HTMLElement = HTMLElement>
   }
 }
 
+function _create_template(t: FutureNode) {
+  try {
+    return t();
+  } catch (error) {
+    throw new Error(`Template create error: ${error}`);
+  }
+}
+function _get_node_from_future(t: FutureNode) {
+  const n = _create_template(t);
+
+  if (_is_fn(n)) return _get_node_from_future(n);
+  return n;
+}
 class ComponentNode extends Node implements SwitchableNode<ComponentNode> {
   public static is(t: any): t is ComponentNode {
     return t instanceof ComponentNode;
@@ -795,7 +877,7 @@ class ComponentNode extends Node implements SwitchableNode<ComponentNode> {
       throw new Error("Template has been deleted");
     nextInternalTick(this._template);
     try {
-      const child = create_template(
+      const child = _create_template(
         this._template.render.bind(this._template) as FutureNode
       );
 
@@ -834,7 +916,7 @@ class ComponentNode extends Node implements SwitchableNode<ComponentNode> {
     if (this._deleted) return;
     this.child_length = 0;
     if (this._children?.length) {
-      queueNodesDeletion(this._children);
+      UpdateQueue.queueNodesDeletion(this._children);
       delete this._children;
     }
   }
@@ -848,10 +930,9 @@ class ComponentNode extends Node implements SwitchableNode<ComponentNode> {
     if (this.hasChildren) {
       if (t.hasChildren) {
         this.needs_update = diffChildren(this._children!, t.children!);
-      } else {
-        this.needs_update = true;
-        this.clearChildren();
       }
+      this.needs_update = true;
+      this.clearChildren();
     } else if (t.hasChildren) this._children = t.children!;
     this.child_length = t.child_length;
     this.switchTemplate(t.template);
@@ -910,7 +991,7 @@ class ComponentInternals<S extends KeyedObject | void = void> {
         ? s(this._state! as S extends void ? undefined : S)
         : s;
     Promise.resolve().then(() => {
-      if (this.#_n) ComponentUpdateQueue.queueNodeUpdate(this.#_n);
+      if (this.#_n) UpdateQueue.queueNodeUpdate(this.#_n);
     });
   }
   public addEffect(e: EffectHandler) {

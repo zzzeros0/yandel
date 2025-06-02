@@ -199,10 +199,10 @@ function AppNotifications() {
 
 #### Future node
 
-Future nodes are `templates` (functions) and will be created at render time (as `components` and `text`). This applies for all type of functions that return a `ValidTemplateReturn`; also the generic tags like `div`, `span`, etc. are allowed
+Future nodes are `templates` (functions) used as a child and will be created at render time (as `components` and `text`). This applies for all type of functions that return a `ValidTemplateReturn`; also the generic tags like `div`, `span`, etc. are allowed
 
 ```ts
-import { div, main, nav } from "yandel"
+import { div, main, nav } from "yandel";
 
 function MyGridOfPhotos () {
   return div(...);
@@ -566,7 +566,7 @@ function UserConsumerWithError() {
 
 #### Future nodes
 
-As explained in the section of [future nodes](#future-node), `components`, `text` and `future nodes` are created at render time, and if your consumer is a function, like in the next example:
+As explained in the section of [future nodes](#future-node), `components`, `text` and `future nodes` are created at render time. You have to understand how they are being created:
 
 ```ts
 function UserConsumer() {
@@ -580,7 +580,8 @@ class App extends Component {
 }
 ```
 
-`UserConsumer` will be created before the `UserProvider` is rendered and provides, leading to an undefined context.
+When a component is created, its `render` method will be called at render time. In this example, `UserConsumer` will be called before the `UserProvider` `render`
+method at render time, so the context will be undefined.
 
 ```ts
 public render(): ValidTemplateReturn {
@@ -591,11 +592,11 @@ public render(): ValidTemplateReturn {
 }
 ```
 
-Now, `UserConsumer` will be able to consume. Don't forget that nodes outside the provider component
+Now, `UserConsumer` will be able to consume, because It will be created at render time right after the `UserProvider` `render` method, so it will be accesible.
 
 ### Ref
 
-The `ref` prop allows you to have access to the element's reference:
+The `ref` prop allows you to have access to the tag's reference:
 
 ```ts
 import { Component, ElementRef, Stores, input } from "yandel";
@@ -635,7 +636,7 @@ class WithKey extends Component {
 
 ## Usage
 
-Define your own templates and components. Then, use `createRoot.render` to render your UI.
+Define your UI: components, templates, nodes... then, use `createRoot.render` to start rendering and done!
 
 ```ts
 import {
