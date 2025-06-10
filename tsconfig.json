@@ -10,9 +10,9 @@
     "experimentalDecorators": true,
     "moduleResolution": "bundler",
     "esModuleInterop": true,
-    "skipLibCheck": false,
+    "skipLibCheck": true,
     "noImplicitOverride": true
   },
-  "include": ["src"],
+  "include": ["src", "types"],
   "exclude": ["node_modules", "dist"]
 }

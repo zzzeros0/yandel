@@ -1,13 +1,4 @@
-import {
-  Component,
-  HTMLProps,
-  HTMLTags,
-  HTMLSVGTags,
-  SVGProps,
-  Node,
-  TagNode,
-  ValidNodeChild,
-} from "./node";
+import { Component, Node, TagNode, ValidNodeChild } from "./node";
 import { _is_string } from "./utils";
 
 export function _is_valid_node(n: any): n is ValidNodeChild {
